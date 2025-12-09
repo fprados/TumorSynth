@@ -214,7 +214,7 @@ else
   merge -t ${working_dir}/all.nii.gz ${working_dir}/label0.nii.gz ${working_dir}/label1.nii.gz ${working_dir}/label2.nii.gz ${working_dir}/label3.nii.gz
   fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
 fi
-cp ${working_dir}/output*/*.* ${PWD}/
+#cp ${working_dir}/output*/*.* ${PWD}/
 
 echo "Removing temporal directories"
 rm -rf ${working_dir}
