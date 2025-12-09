@@ -3,9 +3,6 @@
 # Exit at any error
 set -e
 
-# Make sure FreeSurfer is sourced
-[ ! -e "$FREESURFER_HOME" ] && echo "error: freesurfer has not been properly sourced" && exit 1
-
 # If requesting help
 if  [ $# == 1 ] && [  $1 == "--help" ]
 then
@@ -23,39 +20,120 @@ then
   echo ""
   echo "   * Mode 1. Whole-tumor + healthy tissue segmentation (primary use case) or inner tumor substructure segmentation (requires tumor ROI input). "
   echo "   * Mode 2. Combine T1CE, T2, and FLAIR for better segmentation of heterogeneous tumors. "
-  echo "   * Mode 3. To process multiple scans, use a text file with input paths (one per line) and specify a corresponding output text file."
   echo " "
   echo "The command line options are: "
   echo " "
-  echo "--i [IMAGE_OR_CSV_FILE] "
-  echo "           Input image to segment - mode 1 and 2, or "
-  echo "           A CSV file with list of scans - mode 3 (required argument) each line is a path to a skull-stripped, SRI-24-registered scan"
-  echo "--o [MASK_OR_CSV_FILE] "
-  echo "           Path to save segmentation mask (same format as input) - mode 1 and 2, or "
-  echo "           Output CSV file where each line is the path to save the corresponding segmentation mask - mode 3."
+  echo "--i [IMAGE] "
+  echo "           Input image to segment, it is skull-stripped, SRI-24-registered scan - mode 1 and 2"
+  echo "--o [MASK] "
+  echo "           Path to save segmentation mask (same format as input) - mode 1 and 2"
   echo "--i2 [IMAGE] "
   echo "           Extra input image to segment - mode 2 (optional)"
   echo "--i3 [IMAGE] "
   echo "           Extra input image to segment - mode 2 (optional)"
-  echo "--vol [MASK_OR_CSV_FILE]"
-  echo "           Volume output file (same format as input) - mode 1 and 2, or "
-  echo "           Path to CSV file for saving volumes of all segmented structures - mode 3."
+  echo "--vol [CSV_FILE]"
+  echo "           Path to CSV file for saving volumes of all segmented structures - mode 1 and 2"
   echo "--wholetumor "
-  echo "           Whole-tumor + healthy tissue mode. Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
+  echo "           [Default] Whole-tumor + healthy tissue mode. Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
   echo "--innertumor "
   echo "           Inner tumor substructure mode. Outputs BraTS-compliant subclasses: Tumor Core (TC), Non-Enhancing Tumor (NET), and Edema. Input must be a tumor ROI image (prepare by multiplying raw scan with --wholetumor output mask)."
   echo "--threads [THREADS] "    
   echo "           Number of cores to be used. You can use -1 to use all available cores. Default is -1 (optional)"
-  echo "--cpu [DEV] "     
+  echo "--cpu "     
   echo "           Bypasses GPU detection and runs on CPU (optional) "
 
   exit 0
 fi
 
-# Try to find TumorSynth model files
-MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/mri_TumorSynth_v1.0/nnUNetTrainerV2__nnUNetPlansv2.1/plans.pkl"
+# For each execution we work in a different temporaly directory where we have right access and writting permissions 
+working_dir=`mktemp -d -t TumorSynth_`
+dir_list=''
+DEVICE='GPU'
 
-# if model file not found, print instructions for download and exit
+# For sanity check we output on the screen all the variables
+echo "mri_TumorSynth - U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
+echo " "
+echo "Temporal working directory: ${working_dir}"
+echo " "
+echo "***** INPUT PARAMETERS *****"
+echo " "
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --i)
+      mkdir -p ${working_dir}/in1
+      extension="${2#*.}"
+      cp ${2} ${working_dir}/in1/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/in1,"
+      echo "INPUT FILE 1: $2 copied at ${working_dir}/in1/input_0000.${extension}"
+      shift # past argument
+      shift # past value
+      ;;
+    --i2)
+      mkdir -p ${working_dir}/in2
+      extension="${2#*.}"
+      cp ${2} ${working_dir}/in2/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/in2,"
+      echo "INPUT FILE 2: $2 copied at ${working_dir}/in2/input_0000.${extension}"
+      shift # past argument
+      shift # past value
+      ;;
+    --i3)
+      mkdir -p ${working_dir}/in3
+      extension="${2#*.}"
+      cp ${2} ${working_dir}/in3/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/in3,"
+      echo "INPUT FILE 3: $2 copied at ${working_dir}/in3/input_0000.${extension}"
+      shift # past argument
+      shift # past value
+      ;;
+    --o)
+      OUTPUT_FILE="$2"
+      echo "OUTPUT FILE: $2"
+      shift # past argument
+      shift # past value
+      ;;
+    --vol)
+      VOL_FILE="$2"
+      echo "OUTPUT FILE: $2"
+      shift # past argument
+      shift # past value
+      ;;
+    --wholetumor)
+      MODEL_NAME="nnUNetPlansv2.1"
+      shift # past argument
+      ;;
+    --innertumor)
+      MODEL_NAME="NA"
+      shift # past argument
+      ;;
+    --threads)
+      NUM_THREADS="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    --cpu)
+      DEVICE="cpu"
+      shift # past argument
+      shift # past value
+      ;;
+  esac
+done
+echo "MODEL NAME: ${MODEL_NAME}"
+echo "NUMBER OF THREADS: ${NUM_THREADS}"
+echo "DEVICE: ${DEVICE}"
+echo " "
+echo "****************************"
+
+# Setting up the number of threads
+export OMP_THREAD_LIMIT=${NUM_THREADS}
+export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
+
+echo " "
+echo "Checking that we can find the model..."
+# Try to find TumorSynth model files
+MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/mri_TumorSynth_v1.0/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
+
+# If model file not found, print instructions for download and exit
 if [ ! -f "$MODEL_FILE" ] ;
 then
     echo "Unable to located some dependencies, please follow the steps below to install them, then rerun the script."
@@ -70,11 +148,32 @@ then
     fi
     exit 1    
 fi
+echo "Model found: ${MODEL_NAME} at ${MODEL_FILE}"
 
-# Create command and run!
-BASEPATH="$FREESURFER_HOME/python/packages/mri_TumorSynth/" 
-cmd="nnUNet_predict $@ -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p nnUNetPlansv2.1 -t 002 -f 0 1 2 3 4"
-echo "Running command:"
-echo $cmd
-echo "  "
-$cmd
+# We prepare an empty file for the output
+fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${OUTPUT_FILE}
+
+echo "Ready to run the inference..."
+# Create command and run for each input dataset!
+i=0
+for data_dir in $(tr $dir_list ',' '\n'); do 
+  mkdir -p ${working_dir}/output${i}
+  cmd="nnUNet_predict -d ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t 002 -f 0 1 2 3 4 -device ${DEVICE}"
+  echo "Running command:"
+  echo $cmd
+  echo "  "
+  $cmd
+
+  # We sum all the outputs
+  fslmaths ${OUTPUT_FILE} -add `ls ${working_dir}/output${i}/*.*` ${OUTPUT_FILE}
+  ((i++))
+done
+
+echo "Fusing the results"
+# We divide the final lesion mask by the number of outputs, it is a simple Majority Voting.
+fslmaths ${OUTPUT_FILE} -div ${i} -bin ${OUTPUT_FILE}
+
+echo "Removing temporal directories"
+rm -rf ${working_dir}
+echo "The tumor mask is in: ${OUTPUT_FILE}"
+echo "Have a nice day!!!"
