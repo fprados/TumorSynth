@@ -49,40 +49,42 @@ fi
 working_dir=`mktemp -d -t TumorSynth_`
 dir_list=''
 DEVICE='GPU'
+NUM_THREADS=8
+INNER_TUMOR=0
 
 # For sanity check we output on the screen all the variables
+echo " "
 echo "mri_TumorSynth - U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
 echo " "
 echo "Temporal working directory: ${working_dir}"
 echo " "
 echo "***** INPUT PARAMETERS *****"
-echo " "
 while [[ $# -gt 0 ]]; do
   case $1 in
     --i)
-      mkdir -p ${working_dir}/in1
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
       extension="${2#*.}"
-      cp ${2} ${working_dir}/in1/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/in1,"
-      echo "INPUT FILE 1: $2 copied at ${working_dir}/in1/input_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
+      echo "INPUT FILE 1: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
     --i2)
-      mkdir -p ${working_dir}/in2
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
       extension="${2#*.}"
-      cp ${2} ${working_dir}/in2/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/in2,"
-      echo "INPUT FILE 2: $2 copied at ${working_dir}/in2/input_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in2/input_002_0001.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
+      echo "INPUT FILE 2: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_002_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
     --i3)
-      mkdir -p ${working_dir}/in3
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
       extension="${2#*.}"
-      cp ${2} ${working_dir}/in3/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/in3,"
-      echo "INPUT FILE 3: $2 copied at ${working_dir}/in3/input_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in3/input_003_0000.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
+      echo "INPUT FILE 3: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in3/input_003_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
@@ -104,6 +106,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --innertumor)
       MODEL_NAME="NA"
+      INNER_TUMOR=1
       shift # past argument
       ;;
     --threads)
@@ -114,14 +117,12 @@ while [[ $# -gt 0 ]]; do
     --cpu)
       DEVICE="cpu"
       shift # past argument
-      shift # past value
       ;;
   esac
 done
 echo "MODEL NAME: ${MODEL_NAME}"
 echo "NUMBER OF THREADS: ${NUM_THREADS}"
 echo "DEVICE: ${DEVICE}"
-echo " "
 echo "****************************"
 
 # Setting up the number of threads
@@ -131,13 +132,15 @@ export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
 echo " "
 echo "Checking that we can find the model..."
 # Try to find TumorSynth model files
-MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/mri_TumorSynth_v1.0/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
+MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/TumourSynth_v1.0/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
 
 # If model file not found, print instructions for download and exit
 if [ ! -f "$MODEL_FILE" ] ;
 then
     echo "Unable to located some dependencies, please follow the steps below to install them, then rerun the script."
-    echo ""
+    echo " "
+    echo "File missing: $MODEL_FILE"
+    echo " "
     if [ ! -f "$MODEL_FILE" ]; then 
         echo " "
         echo "   Machine learning model file not found. Please download from from: "
@@ -151,27 +154,67 @@ fi
 echo "Model found: ${MODEL_NAME} at ${MODEL_FILE}"
 
 # We prepare an empty file for the output
-fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${OUTPUT_FILE}
+if [ "${INNER_TUMOR}" = "0" ] ;
+then
+  # The case of the whole tumor segmentation (just 1 value per mask)
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${OUTPUT_FILE}
+else
+  # The inner tumor has 3 labels and background
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label0.nii.gz
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label1.nii.gz
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label2.nii.gz
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label3.nii.gz
+fi
+
+# Setting up local environment variables
+nnUNet_preprocessed=${working_dir}/nnUNet_preprocessed
+RESULTS_FOLDER=${working_dir}/results
+nnUNet_raw_data_base=${working_dir}/nnUNet_raw_data_base
+
+# Creating output directory
+mkdir -p ${RESULTS_FOLDER}/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}
+cp -r ${MODEL_FILE/plans*/}* ${RESULTS_FOLDER}/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}
 
 echo "Ready to run the inference..."
 # Create command and run for each input dataset!
 i=0
-for data_dir in $(tr $dir_list ',' '\n'); do 
+for data_dir in $(echo "$dir_list" | tr ',' '\n'); do 
   mkdir -p ${working_dir}/output${i}
-  cmd="nnUNet_predict -d ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t 002 -f 0 1 2 3 4 -device ${DEVICE}"
+  cmd="nnUNet_predict -i ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t 002 -f 0 1 2 3 4 "
   echo "Running command:"
   echo $cmd
   echo "  "
   $cmd
 
   # We sum all the outputs
-  fslmaths ${OUTPUT_FILE} -add `ls ${working_dir}/output${i}/*.*` ${OUTPUT_FILE}
+  if [ "${INNER_TUMOR}" = "0" ] ;
+  then
+    # The case of the whole tumor segmentation (just 1 value per mask)
+    fslmaths ${OUTPUT_FILE} -add `ls ${working_dir}/output${i}/*.* | grep nii` ${OUTPUT_FILE}
+  else
+    # The inner tumor has 3 labels
+    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 0.5 -uthr 1.5 -bin -add ${working_dir}/label1.nii.gz ${i} ${working_dir}/label1.nii.gz
+    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 1.5 -uthr 2.5 -bin -add ${working_dir}/label2.nii.gz ${i} ${working_dir}/label2.nii.gz
+    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 2.5 -uthr 3.5 -bin -add ${working_dir}/label3.nii.gz ${i} ${working_dir}/label3.nii.gz
+  fi
   ((i++))
 done
 
-echo "Fusing the results"
+echo "Fusing the results for computing the final mask"
 # We divide the final lesion mask by the number of outputs, it is a simple Majority Voting.
-fslmaths ${OUTPUT_FILE} -div ${i} -bin ${OUTPUT_FILE}
+if [ "${INNER_TUMOR}" = "0" ] ;
+then
+  # The case of the whole tumor segmentation (just 1 value per mask)
+  fslmaths ${OUTPUT_FILE} -div ${i} -bin ${OUTPUT_FILE}
+else
+  # The inner tumor has 3 labels
+  fslmaths ${working_dir}/label1.nii.gz -div ${i} ${working_dir}/label1.nii.gz
+  fslmaths ${working_dir}/label2.nii.gz -div ${i} ${working_dir}/label2.nii.gz
+  fslmaths ${working_dir}/label3.nii.gz -div ${i} ${working_dir}/label3.nii.gz
+  merge -t ${working_dir}/all.nii.gz ${working_dir}/label0.nii.gz ${working_dir}/label1.nii.gz ${working_dir}/label2.nii.gz ${working_dir}/label3.nii.gz
+  fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
+fi
+cp ${working_dir}/output*/*.* ${PWD}/
 
 echo "Removing temporal directories"
 rm -rf ${working_dir}
