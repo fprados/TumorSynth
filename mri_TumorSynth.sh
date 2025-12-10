@@ -34,7 +34,7 @@ then
   echo "--vol [CSV_FILE]"
   echo "           Path to CSV file for saving volumes of all segmented structures - mode 1 and 2"
   echo "--wholetumor "
-  echo "           [Default] Whole-tumor + healthy tissue mode. Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
+  echo "           [Default] Whole-tumor (1 single label) + healthy tissue mode (17 labels). Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
   echo "--innertumor "
   echo "           Inner tumor substructure mode. Outputs BraTS-compliant subclasses: Tumor Core (TC), Non-Enhancing Tumor (NET), and Edema. Input must be a tumor ROI image (prepare by multiplying raw scan with --wholetumor output mask)."
   echo "--threads [THREADS] "    
@@ -131,8 +131,13 @@ export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
 
 echo " "
 echo "Checking that we can find the model..."
-# Try to find TumorSynth model files
-MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
+# Try to find TumorSynth model files for whole tumor segmentation 
+MODEL_FILE="${NNUNET_ENV_DIR}/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
+if [ "${INNER_TUMOR}" = "1" ] ;
+then
+  # The inner tumor has a different model
+  MODEL_FILE="${NNUNET_ENV_DIR}/TBA"
+fi
 
 # If model file not found, print instructions for download and exit
 if [ ! -f "$MODEL_FILE" ] ;
@@ -143,8 +148,12 @@ then
     echo " "
     if [ ! -f "$MODEL_FILE" ]; then 
         echo " "
-        echo "   Machine learning model file not found. Please download from from: "
+        echo "   Machine learning model file not found. Please download for the whole tumor segmentation from: "
         echo "     https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/EWsIGJOFbD9MiPyQnGhjGHwBquaWhxJfEAzbfs6v5BvFzA?e=JQHlSQ "
+        echo " "
+        echo "   and the model for the inner tumor segmentation from: "
+        echo "     TBA"
+        echo " "
         echo "   and follow installation instructions from:  "
         echo "     https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth#Installation"
         echo " "
@@ -153,9 +162,13 @@ then
 fi
 echo "Model found: ${MODEL_NAME} at ${MODEL_FILE}"
 
+# Setting up local environment variables
+nnUNet_preprocessed=${working_dir}/nnUNet_preprocessed
+RESULTS_FOLDER=${MODEL_FILE/nnUNet\/*/}
+nnUNet_raw_data_base=${working_dir}/nnUNet_raw_data_base
+
 # The case of the whole tumor segmentation (18 values, 17 tissues and 1 label for the tumor)
 endlabel=18
-
 if [ "${INNER_TUMOR}" = "1" ] ;
 then
   # The inner tumor has 3 labels and background
@@ -167,23 +180,21 @@ for num in `seq 0 ${endlabel}`; do
   fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label${num}.nii.gz
 done
 
-# Setting up local environment variables
-nnUNet_preprocessed=${working_dir}/nnUNet_preprocessed
-RESULTS_FOLDER=${MODEL_FILE/nnUNet\/*/}
-nnUNet_raw_data_base=${working_dir}/nnUNet_raw_data_base
-
 echo "Ready to run the inference..."
-# Create command and run for each input dataset!
+# Create command and run for each input dataset! We run the inference as many times as input files
 i=0
 for data_dir in $(echo "$dir_list" | tr ',' '\n'); do 
+  # One output directory for each inference
   mkdir -p ${working_dir}/output${i}
+
+  # nnUNet command 
   cmd="nnUNet_predict -i ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t 002 -f 0 1 2 3 4 "
   echo "Running command:"
   echo $cmd
   echo "  "
   $cmd
 
-  # We sum all the outputs
+  # Sum all the outputs after each inference
   for num in `seq 1 ${endlabel}`; do
     lower=`echo "${num} - 0.5" | bc -l`
     upper=`echo "${num} + 0.5" | bc -l`
@@ -194,15 +205,21 @@ done
 
 filelist="${working_dir}/label0.nii.gz "
 echo "Fusing the results for computing the final mask"
-# We divide the final label maps by the number of outputs, it is a simple Majority Voting.
+
+# Divide the final label maps by the number of outputs, it is a simple Majority Voting.
 for num in `seq 1 ${endlabel}`; do
+  # Compute the probability of each label. Label contains the number of appearances per execution, and ${i} is the number of executions
   fslmaths ${working_dir}/label${num}.nii.gz -div ${i} ${working_dir}/label${num}.nii.gz
   filelist="${filelist} ${working_dir}/label${num}.nii.gz"
 done
-# We merge all the volume in a single 4D file and then we output the results
+
+# Merge all the volume in a single 4D file and then we output the results
 merge -t ${working_dir}/all.nii.gz ${filelist}
+
+# We reduce the 4D file to 3D taking as label value the number of volume with the highest value
 fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
 
+# Cleaning up a little bit the unneeded data
 echo "Removing temporal directories"
 rm -rf ${working_dir}
 echo "The tumor mask is in: ${OUTPUT_FILE}"
