@@ -62,29 +62,29 @@ echo "***** INPUT PARAMETERS *****"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --i)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1
       extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
-      echo "INPUT FILE 1: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1,"
+      echo "INPUT FILE 1: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1/input_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
     --i2)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2
       extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in2/input_002_0001.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
-      echo "INPUT FILE 2: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs/input_002_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2,"
+      echo "INPUT FILE 2: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2/input_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
     --i3)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs
+      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3
       extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in3/input_003_0000.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs,"
-      echo "INPUT FILE 3: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/in3/input_003_0000.${extension}"
+      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3/input_0000.${extension}
+      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3,"
+      echo "INPUT FILE 3: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3/input_0000.${extension}"
       shift # past argument
       shift # past value
       ;;
@@ -132,7 +132,7 @@ export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
 echo " "
 echo "Checking that we can find the model..."
 # Try to find TumorSynth model files
-MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/TumourSynth_v1.0/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
+MODEL_FILE="$NNUNET_ENV_DIR/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
 
 # If model file not found, print instructions for download and exit
 if [ ! -f "$MODEL_FILE" ] ;
@@ -168,12 +168,8 @@ fi
 
 # Setting up local environment variables
 nnUNet_preprocessed=${working_dir}/nnUNet_preprocessed
-RESULTS_FOLDER=${working_dir}/results
+RESULTS_FOLDER=${MODEL_FILE/nnUNet\/*/}
 nnUNet_raw_data_base=${working_dir}/nnUNet_raw_data_base
-
-# Creating output directory
-mkdir -p ${RESULTS_FOLDER}/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}
-cp -r ${MODEL_FILE/plans*/}* ${RESULTS_FOLDER}/nnUNet/3d_fullres/Task002_Tumor/nnUNetTrainerV2__${MODEL_NAME}
 
 echo "Ready to run the inference..."
 # Create command and run for each input dataset!
@@ -205,7 +201,7 @@ echo "Fusing the results for computing the final mask"
 if [ "${INNER_TUMOR}" = "0" ] ;
 then
   # The case of the whole tumor segmentation (just 1 value per mask)
-  fslmaths ${OUTPUT_FILE} -div ${i} -bin ${OUTPUT_FILE}
+  fslmaths ${OUTPUT_FILE} -div ${i} ${OUTPUT_FILE}
 else
   # The inner tumor has 3 labels
   fslmaths ${working_dir}/label1.nii.gz -div ${i} ${working_dir}/label1.nii.gz
