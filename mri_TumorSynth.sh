@@ -42,6 +42,8 @@ show_help() {
   echo "--nnUNet"
   echo "           Root directory of the nnUnet, i.e. /home/user_example/nnUNet "
   echo " "
+  echo "  For more detailed info, please read: https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth"
+  echo ""
   exit ${1}
 }
 
@@ -57,6 +59,7 @@ dir_list=''
 DEVICE='GPU'
 NUM_THREADS=8
 INNER_TUMOR=0
+TASK="002"
 
 # For sanity check we output on the screen all the variables
 echo " "
@@ -108,10 +111,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     --wholetumor)
       MODEL_NAME="nnUNetPlansv2.1"
+      TASK="002"
       shift # past argument
       ;;
     --innertumor)
-      MODEL_NAME="NA"
+      MODEL_NAME="nnUNetPlansv2.1"
+      TASK="003"
       INNER_TUMOR=1
       shift # past argument
       ;;
@@ -156,7 +161,7 @@ MODEL_FILE="${NNUNET_ENV_DIR}/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullre
 if [ "${INNER_TUMOR}" = "1" ] ;
 then
   # The inner tumor has a different model
-  MODEL_FILE="${NNUNET_ENV_DIR}/TBA"
+  MODEL_FILE="${NNUNET_ENV_DIR}/nnUNet_v1.7/nnUNet_trained_models/nnUNet/3d_fullres/Task003_InnerTumor/nnUNetTrainerV2__${MODEL_NAME}/plans.pkl"
 fi
 
 # If model file not found, print instructions for download and exit
@@ -172,7 +177,7 @@ then
         echo "     https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/EWsIGJOFbD9MiPyQnGhjGHwBquaWhxJfEAzbfs6v5BvFzA?e=JQHlSQ "
         echo " "
         echo "   and the model for the inner tumor segmentation from: "
-        echo "     TBA"
+        echo "     https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/IQCJJdWxSqPsQpKaxW3yFWikARbdkwcgnY8nkd-5HUezl3Q?e=E7i74D"
         echo " "
         echo "   and follow installation instructions from:  "
         echo "     https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth#Installation"
@@ -208,7 +213,7 @@ for data_dir in $(echo "$dir_list" | tr ',' '\n'); do
   mkdir -p ${working_dir}/output${i}
 
   # nnUNet command 
-  cmd="nnUNet_predict -i ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t 002 -f 0 1 2 3 4 "
+  cmd="nnUNet_predict -i ${data_dir} -o ${working_dir}/output${i} -tr nnUNetTrainerV2 -ctr nnUNetTrainerV2CascadeFullRes -m 3d_fullres -p ${MODEL_NAME} -t ${TASK} -f 0 1 2 3 4 "
   echo "Running command:"
   echo $cmd
   echo "  "
