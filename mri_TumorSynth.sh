@@ -3,7 +3,7 @@
 # Exit at any error
 set -e
 
-show_help(){
+show_help() {
   echo " "
   echo "U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
   echo " "
@@ -41,14 +41,14 @@ show_help(){
   echo "           Bypasses GPU detection and runs on CPU (optional) "
   echo "--nnUNet"
   echo "           Root directory of the nnUnet, i.e. /home/user_example/nnUNet "
-  echo ""
+  echo " "
   exit ${1}
 }
 
 # If requesting help
-if  [ $# == 1 ] && [  $1 == "--help" ]
+if  [ $# == 1 ] && [  $1 == "--help" ] ;
 then
-  show_help(0) 
+  show_help 0 
 fi
 
 # For each execution we work in a different temporaly directory where we have right access and writting permissions 
@@ -142,10 +142,11 @@ export OMP_THREAD_LIMIT=${NUM_THREADS}
 export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
 
 # Test that the path to store the nnUNet file tree is set
-if [ -z $NNUNET_ENV_DIR ]; then
+if [ -z $NNUNET_ENV_DIR ]; 
+then
     echo "ERROR: The directory to save the nnUNet model files is not set. Variable NNUNET_ENV_DIR. Exiting... "
     echo " "
-    show_help(-1)
+    show_help -1
 fi
 
 echo " "
@@ -233,7 +234,7 @@ for num in `seq 1 ${endlabel}`; do
 done
 
 # Merge all the volume in a single 4D file and then we output the results
-merge -t ${working_dir}/all.nii.gz ${filelist}
+fslmerge -t ${working_dir}/all.nii.gz ${filelist}
 
 # We reduce the 4D file to 3D taking as label value the number of volume with the highest value
 fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
