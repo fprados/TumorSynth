@@ -3,9 +3,7 @@
 # Exit at any error
 set -e
 
-# If requesting help
-if  [ $# == 1 ] && [  $1 == "--help" ]
-then
+show_help(){
   echo " "
   echo "U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
   echo " "
@@ -41,8 +39,16 @@ then
   echo "           Number of cores to be used. You can use -1 to use all available cores. Default is -1 (optional)"
   echo "--cpu "     
   echo "           Bypasses GPU detection and runs on CPU (optional) "
+  echo "--nnUNet"
+  echo "           Root directory of the nnUnet, i.e. /home/user_example/nnUNet "
+  echo ""
+  exit ${1}
+}
 
-  exit 0
+# If requesting help
+if  [ $# == 1 ] && [  $1 == "--help" ]
+then
+  show_help(0) 
 fi
 
 # For each execution we work in a different temporaly directory where we have right access and writting permissions 
@@ -118,16 +124,29 @@ while [[ $# -gt 0 ]]; do
       DEVICE="cpu"
       shift # past argument
       ;;
+    --nnUnet)
+      NNUNET_ENV_DIR="$2"
+      shift # past argument
+      shift # past value
+      ;;
   esac
 done
 echo "MODEL NAME: ${MODEL_NAME}"
 echo "NUMBER OF THREADS: ${NUM_THREADS}"
 echo "DEVICE: ${DEVICE}"
+echo "NNUNET DIRECTORY: ${NNUNET_ENV_DIR}"
 echo "****************************"
 
 # Setting up the number of threads
 export OMP_THREAD_LIMIT=${NUM_THREADS}
 export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
+
+# Test that the path to store the nnUNet file tree is set
+if [ -z $NNUNET_ENV_DIR ]; then
+    echo "ERROR: The directory to save the nnUNet model files is not set. Variable NNUNET_ENV_DIR. Exiting... "
+    echo " "
+    show_help(-1)
+fi
 
 echo " "
 echo "Checking that we can find the model..."
@@ -158,7 +177,7 @@ then
         echo "     https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth#Installation"
         echo " "
     fi
-    exit 1    
+    exit -1    
 fi
 echo "Model found: ${MODEL_NAME} at ${MODEL_FILE}"
 
