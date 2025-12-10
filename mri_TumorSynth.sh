@@ -153,18 +153,19 @@ then
 fi
 echo "Model found: ${MODEL_NAME} at ${MODEL_FILE}"
 
-# We prepare an empty file for the output
-if [ "${INNER_TUMOR}" = "0" ] ;
+# The case of the whole tumor segmentation (18 values, 17 tissues and 1 label for the tumor)
+endlabel=18
+
+if [ "${INNER_TUMOR}" = "1" ] ;
 then
-  # The case of the whole tumor segmentation (just 1 value per mask)
-  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${OUTPUT_FILE}
-else
   # The inner tumor has 3 labels and background
-  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label0.nii.gz
-  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label1.nii.gz
-  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label2.nii.gz
-  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label3.nii.gz
+  endlabel=3
 fi
+
+# We prepare the empty files for saving each label of the output
+for num in `seq 0 ${endlabel}`; do
+  fslmaths ${dir_list/,*/}/input_0000.* -mul 0 ${working_dir}/label${num}.nii.gz
+done
 
 # Setting up local environment variables
 nnUNet_preprocessed=${working_dir}/nnUNet_preprocessed
@@ -183,34 +184,24 @@ for data_dir in $(echo "$dir_list" | tr ',' '\n'); do
   $cmd
 
   # We sum all the outputs
-  if [ "${INNER_TUMOR}" = "0" ] ;
-  then
-    # The case of the whole tumor segmentation (just 1 value per mask)
-    fslmaths ${OUTPUT_FILE} -add `ls ${working_dir}/output${i}/*.* | grep nii` ${OUTPUT_FILE}
-  else
-    # The inner tumor has 3 labels
-    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 0.5 -uthr 1.5 -bin -add ${working_dir}/label1.nii.gz ${i} ${working_dir}/label1.nii.gz
-    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 1.5 -uthr 2.5 -bin -add ${working_dir}/label2.nii.gz ${i} ${working_dir}/label2.nii.gz
-    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr 2.5 -uthr 3.5 -bin -add ${working_dir}/label3.nii.gz ${i} ${working_dir}/label3.nii.gz
-  fi
+  for num in `seq 1 ${endlabel}`; do
+    lower=`echo "${num} - 0.5" | bc -l`
+    upper=`echo "${num} + 0.5" | bc -l`
+    fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr ${lower} -uthr ${upper} -bin -add ${working_dir}/label${num}.nii.gz ${working_dir}/label${num}.nii.gz
+  done
   ((i++))
 done
 
+filelist="${working_dir}/label0.nii.gz "
 echo "Fusing the results for computing the final mask"
-# We divide the final lesion mask by the number of outputs, it is a simple Majority Voting.
-if [ "${INNER_TUMOR}" = "0" ] ;
-then
-  # The case of the whole tumor segmentation (just 1 value per mask)
-  fslmaths ${OUTPUT_FILE} -div ${i} ${OUTPUT_FILE}
-else
-  # The inner tumor has 3 labels
-  fslmaths ${working_dir}/label1.nii.gz -div ${i} ${working_dir}/label1.nii.gz
-  fslmaths ${working_dir}/label2.nii.gz -div ${i} ${working_dir}/label2.nii.gz
-  fslmaths ${working_dir}/label3.nii.gz -div ${i} ${working_dir}/label3.nii.gz
-  merge -t ${working_dir}/all.nii.gz ${working_dir}/label0.nii.gz ${working_dir}/label1.nii.gz ${working_dir}/label2.nii.gz ${working_dir}/label3.nii.gz
-  fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
-fi
-#cp ${working_dir}/output*/*.* ${PWD}/
+# We divide the final label maps by the number of outputs, it is a simple Majority Voting.
+for num in `seq 1 ${endlabel}`; do
+  fslmaths ${working_dir}/label${num}.nii.gz -div ${i} ${working_dir}/label${num}.nii.gz
+  filelist="${filelist} ${working_dir}/label${num}.nii.gz"
+done
+# We merge all the volume in a single 4D file and then we output the results
+merge -t ${working_dir}/all.nii.gz ${filelist}
+fslmaths ${working_dir}/all.nii.gz -Tmaxn ${OUTPUT_FILE}
 
 echo "Removing temporal directories"
 rm -rf ${working_dir}
