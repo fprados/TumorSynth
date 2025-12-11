@@ -111,8 +111,18 @@ echo "MODEL NAME: ${MODEL_NAME}"
 echo "NUMBER OF THREADS: ${NUM_THREADS}"
 echo "DEVICE: ${DEVICE}"
 echo "NNUNET DIRECTORY: ${NNUNET_ENV_DIR}"
+
+# Copying all the input data in the corresponding working directory
 n=1
 for data_input in $(echo "$list_files" | tr ',' '\n'); do
+  # For each input file we generate a subject in the nnUNet
+  # Test that the path to store the nnUNet file tree is set
+  if [ ! -f ${data_input} ]; 
+  then
+    echo "ERROR: Unable to locate the input file ${data_input}. Exiting... "
+    echo " "
+    show_help -1
+  fi
   mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n}
   extension="${data_input#*.}"
   cp ${data_input} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n}/input_0000.${extension}
@@ -127,7 +137,7 @@ export OMP_THREAD_LIMIT=${NUM_THREADS}
 export OMP_NUM_THREADS=${OMP_THREAD_LIMIT}
 
 # Test that the path to store the nnUNet file tree is set
-if [ -z $NNUNET_ENV_DIR ]; 
+if [ -z ${NNUNET_ENV_DIR} ]; 
 then
     echo "ERROR: The directory to save the nnUNet model files is not set. Variable NNUNET_ENV_DIR. Exiting... "
     echo " "
@@ -147,7 +157,7 @@ fi
 # If model file not found, print instructions for download and exit
 if [ ! -f "$MODEL_FILE" ] ;
 then
-    echo "Unable to located some dependencies, please follow the steps below to install them, then rerun the script."
+    echo "Unable to locate some dependencies, please follow the steps below to install them, then rerun the script."
     echo " "
     echo "File missing: $MODEL_FILE"
     echo " "
