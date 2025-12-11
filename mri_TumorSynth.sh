@@ -34,7 +34,7 @@ show_help() {
   echo "--wholetumor "
   echo "           [Default] Whole-tumor (1 single label) + healthy tissue mode (17 labels). Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
   echo "--innertumor "
-  echo "           Inner tumor substructure mode. Outputs BraTS-compliant subclasses: Tumor Core (TC), Non-Enhancing Tumor (NET), and Edema. Input must be a tumor ROI image (prepare by multiplying raw scan with --wholetumor output mask)."
+  echo "           Inner tumor substructure mode. Outputs BraTS-compliant subclasses: Tumor Core (TC), Non-Enhancing Tumor (NET), and Edema. Input must be a tumor ROI image (prepare by multiplying raw MRI scan with --wholetumor output mask. i.e. fslmaths wholetumorsegmentation.nii.gz -thr 17.5 -uthr 18.5 -bin -mul t1ce.nii.gz tumor-t1ce.nii.gz)."
   echo "--threads [THREADS] "    
   echo "           Number of cores to be used. You can use -1 to use all available cores. Default is -1 (optional)"
   echo "--cpu "     
