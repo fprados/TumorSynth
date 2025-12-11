@@ -5,7 +5,7 @@ set -e
 
 show_help() {
   echo " "
-  echo "U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
+  echo "U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR,...)."
   echo " "
   echo "The code relies on: "
   echo "   TumorSynth: Integrated Brain Tumor and Tissue Segmentation in Brain MRI Scans of any Resolution and Contrast "
@@ -16,21 +16,15 @@ show_help() {
   echo " "
   echo "mri_TumorSynth supports three primary usage scenarios, with flexibility for single or multi-sequence inputs: "
   echo ""
-  echo "   * Mode 1. Whole-tumor + healthy tissue segmentation (primary use case) or inner tumor substructure segmentation (requires tumor ROI input). "
-  echo "   * Mode 2. Combine T1CE, T2, and FLAIR for better segmentation of heterogeneous tumors. "
+  echo "   * Whole-tumor + healthy tissue segmentation (primary use case) or inner tumor substructure segmentation (requires tumor ROI input). "
+  echo "   * Combine T1CE, T2, and FLAIR for better segmentation of heterogeneous tumors. "
   echo " "
   echo "The command line options are: "
   echo " "
-  echo "--i [IMAGE] "
-  echo "           Input image to segment, it is skull-stripped, SRI-24-registered scan - mode 1 and 2"
+  echo "--i [SINGLE_IMAGE_OR_IMAGE_LIST] "
+  echo "           Input image to segment or input images separate by commas, it is/they are skull-stripped, SRI-24-registered scan. (i.e.: --i t1ce.nii.gz,t1.nii.gz,t2.nii.gz )"
   echo "--o [MASK] "
-  echo "           Path to save segmentation mask (same format as input) - mode 1 and 2"
-  echo "--i2 [IMAGE] "
-  echo "           Extra input image to segment - mode 2 (optional)"
-  echo "--i3 [IMAGE] "
-  echo "           Extra input image to segment - mode 2 (optional)"
-  echo "--vol [CSV_FILE]"
-  echo "           Path to CSV file for saving volumes of all segmented structures - mode 1 and 2"
+  echo "           Path to save segmentation mask (same format as input) "
   echo "--wholetumor "
   echo "           [Default] Whole-tumor (1 single label) + healthy tissue mode (17 labels). Outputs combined mask of healthy brain tissue and whole tumor (includes edema, enhancing tumor, non-enhancing tumor). Input must be skull-stripped and registered to SRI-24 template. "
   echo "--innertumor "
@@ -60,10 +54,12 @@ DEVICE='GPU'
 NUM_THREADS=8
 INNER_TUMOR=0
 TASK="002"
+TASK_NAME="Tumor"
+list_files=""
 
 # For sanity check we output on the screen all the variables
 echo " "
-echo "mri_TumorSynth - U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR)."
+echo "mri_TumorSynth - U-Net trained to segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR,...)."
 echo " "
 echo "Temporal working directory: ${working_dir}"
 echo " "
@@ -71,29 +67,8 @@ echo "***** INPUT PARAMETERS *****"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --i)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1
-      extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1,"
-      echo "INPUT FILE 1: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs1/input_0000.${extension}"
-      shift # past argument
-      shift # past value
-      ;;
-    --i2)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2
-      extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2,"
-      echo "INPUT FILE 2: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs2/input_0000.${extension}"
-      shift # past argument
-      shift # past value
-      ;;
-    --i3)
-      mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3
-      extension="${2#*.}"
-      cp ${2} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3/input_0000.${extension}
-      dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3,"
-      echo "INPUT FILE 3: $2 copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task002_Tumor/ImagesTs3/input_0000.${extension}"
+      list_files=$2
+      echo "INPUT FILES: $2"
       shift # past argument
       shift # past value
       ;;
@@ -103,20 +78,16 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    --vol)
-      VOL_FILE="$2"
-      echo "OUTPUT FILE: $2"
-      shift # past argument
-      shift # past value
-      ;;
     --wholetumor)
       MODEL_NAME="nnUNetPlansv2.1"
       TASK="002"
+      TASK_NAME="Tumor"
       shift # past argument
       ;;
     --innertumor)
       MODEL_NAME="nnUNetPlansv2.1"
       TASK="003"
+      TASK_NAME="InnerTumor"
       INNER_TUMOR=1
       shift # past argument
       ;;
@@ -140,6 +111,15 @@ echo "MODEL NAME: ${MODEL_NAME}"
 echo "NUMBER OF THREADS: ${NUM_THREADS}"
 echo "DEVICE: ${DEVICE}"
 echo "NNUNET DIRECTORY: ${NNUNET_ENV_DIR}"
+n=1
+for data_input in $(echo "$list_files" | tr ',' '\n'); do
+  mkdir -p ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n}
+  extension="${data_input#*.}"
+  cp ${data_input} ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n}/input_0000.${extension}
+  dir_list="${dir_list}${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n},"
+  echo "INPUT FILE ${n}: ${data_input} copied at ${working_dir}/nnUNet_raw_data_base/nnUNet_raw_data/Task${TASK}_${TASK_NAME}/ImagesTs${n}/input_0000.${extension}"
+  ((n++))
+done
 echo "****************************"
 
 # Setting up the number of threads
