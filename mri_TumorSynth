@@ -49,8 +49,8 @@ fi
 
 # For each execution we work in a different temporaly directory where we have right access and writting permissions 
 working_dir=`mktemp -d -t TumorSynth_`
-dir_list=''
-DEVICE='GPU'
+dir_list=""
+DEVICE="GPU"
 NUM_THREADS=8
 INNER_TUMOR=0
 TASK="002"
