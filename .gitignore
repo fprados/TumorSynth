@@ -3,6 +3,8 @@
 
 # Test directories
 data/
+extra-data/
+tmp/
 
 # Compiled Java class files
 *.class
@@ -36,6 +38,7 @@ Thumbs.db
 *.app
 *.exe
 *.war
+*.deb
 
 # Large media files
 *.mp4
@@ -46,3 +49,5 @@ Thumbs.db
 *.wmv
 *.nii.gz
 *.pth
+*.tar.gz
+*.zip
