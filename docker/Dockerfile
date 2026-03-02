@@ -89,7 +89,8 @@ RUN apt-get install -y --fix-missing \
       pulseaudio \
       libquadmath0 \
       libgtk2.0-0  \
-      libgomp1
+      libgomp1 \
+      bc
 
 # We install FSL 6.0 from the official FSL website, which is the version of FSL that we want to use for TumorSynth
 ENV FSLDIR="/usr/local/fsl"
