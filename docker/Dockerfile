@@ -54,10 +54,20 @@ RUN apt-get install -y --fix-missing \
       software-properties-common \
       unzip 
 
-# We copy the version of FreeSurfer that we want to build into the container
-COPY extra-data/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz /opt
+# We download the latest version of FreeSurfer that we want to build into the container
+#
+# IMPORTANT CONSIDERATION: FreeSurfer is a software that is under constant development, and new versions are released frequently.
+#
+# The following two lines could be adapted to download a specific version of FreeSurfer if needed, 
+# but for now we will just download the latest version available at the moment of building the container
+# Also it could be copied from a directory if it is already downloaded, 
+# in that case the line with wget should be commented and the line with copy should be uncommented
+#
+# COPY extra-data/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz /opt
+RUN wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/dev/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz \
+    -O /opt/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz
 
-# We extract the FreeSurfer source code
+# We extract the FreeSurfer nifhtly build and we remove the tar.gz file to save space
 RUN tar -xzf /opt/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz -C /opt && \
     rm /opt/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz
 
