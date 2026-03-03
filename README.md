@@ -11,21 +11,52 @@ Read from here: [FreeSurfer Wiki - TumorSynth](https://surfer.nmr.mgh.harvard.ed
 - Model and weights for inner tumor segementation: [Task003_InnerTumor.zip](https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/IQCJJdWxSqPsQpKaxW3yFWikARbdkwcgnY8nkd-5HUezl3Q?e=E7i74D) 
 - Installation script: [create_nnUNet_v1.7_env.sh](https://github.com/fprados/TumorSynth/blob/main/docker/create_nnUNet_v1.7_env.sh)
 
-# Docker Installation
+# Building the Docker Image
 
-To build the docker you need to do:
+## 1. Clone the Repository
 
-```
-./docker/docker_build.sh
-````
-
-To run the docker for testing mri_tumorsynth:
+First, clone the TumorSynth repository to your local machine:
 
 ```
-./docker/docker_run.sh
-````
+git clone https://github.com/fprados/TumorSynth.git 
+```
 
-The Docker container is configured to build and use the current directory as the working directory (this can be modified if needed). Once the container is running, you must activate the conda-nnUnetv1.7 environment from within the container before executing mri_tumorsynth.
+## 2. Download the Model Weights
+
+From within the cloned repository, create the `extra-data` subdirectory inside the docker folder and download the required weights:
+
+```
+mkdir -p docker/extra-data
+cd docker/extra-data
+wget https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/EWsIGJOFbD9MiPyQnGhjGHwBquaWhxJfEAzbfs6v5BvFzA?e=JQHlSQ -O TumorSynth_v1.0.zip
+wget https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/IQCJJdWxSqPsQpKaxW3yFWikARbdkwcgnY8nkd-5HUezl3Q?e=E7i74D -O Task003_InnerTumor.zip
+```
+
+## 3. Build the Docker Image
+
+Navigate to the docker directory inside the TumorSynth repository and run:
+
+```
+./docker_build.sh
+```
+
+The Docker image is currently built using the latest FreeSurfer nightly build. Since FreeSurfer is under continuous development and new versions are released frequently, you may prefer to use a specific version. In that case:
+
+- Download the desired FreeSurfer version locally (e.g., into the `extra-data` subdirectory).
+
+- Modify the corresponding lines (66–67) in the `Dockerfile` to copy your selected version into the container.
+
+# Running the Docker Container
+
+Once built, to run the docker for testing `mri_tumorsynth`, you need to type from the docker subdirectory:
+
+```
+./docker_run.sh
+```
+
+The Docker container is configured to use the current directory as the working directory by default (this can be adjusted if needed).
+
+After the container starts, you must activate the `conda-nnUnetv1.7` environment before running `mri_tumorsynth`:
 
 ```
 source /opt/init.sh
