@@ -205,14 +205,16 @@ for data_dir in $(echo "$dir_list" | tr ',' '\n'); do
   echo "  "
   $cmd
 
+  echo "Inference for input ${data_dir} done, fusing the results with the previous ones..."
   # Sum all the outputs after each inference
   for num in `seq 1 ${endlabel}`; do
     lower=`echo "${num} - 0.5" | bc -l`
     upper=`echo "${num} + 0.5" | bc -l`
     fslmaths `ls ${working_dir}/output${i}/*.* | grep nii` -thr ${lower} -uthr ${upper} -bin -add ${working_dir}/label${num}.nii.gz ${working_dir}/label${num}.nii.gz
   done
-  ((i++))
+  let i++ || true
 done
+echo "Inference done, fusing the final results..."
 
 filelist="${working_dir}/label0.nii.gz "
 echo "Fusing the results for computing the final mask"
