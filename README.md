@@ -28,9 +28,14 @@ From within the cloned repository, create the `extra-data` subdirectory inside t
 ```
 mkdir -p docker/extra-data
 cd docker/extra-data
-wget https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/EWsIGJOFbD9MiPyQnGhjGHwBquaWhxJfEAzbfs6v5BvFzA?e=JQHlSQ -O TumorSynth_v1.0.zip
-wget https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/IQCJJdWxSqPsQpKaxW3yFWikARbdkwcgnY8nkd-5HUezl3Q?e=E7i74D -O Task003_InnerTumor.zip
 ```
+
+You need to download to the `extra-data` subdirectory the two following files:
+
+- Model and weights for whole tumor segementation: [TumourSynth_v1.0.zip](https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/EWsIGJOFbD9MiPyQnGhjGHwBquaWhxJfEAzbfs6v5BvFzA?e=JQHlSQ) 
+- Model and weights for inner tumor segementation: [Task003_InnerTumor.zip](https://liveuclac-my.sharepoint.com/:u:/g/personal/rmapfpr_ucl_ac_uk/IQCJJdWxSqPsQpKaxW3yFWikARbdkwcgnY8nkd-5HUezl3Q?e=E7i74D) 
+
+The filenames need to be as follow: `TumorSynth_v1.0.zip` and `Task003_InnerTumor.zip`
 
 ## 3. Build the Docker Image
 
