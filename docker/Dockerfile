@@ -65,6 +65,7 @@ RUN apt-get install -y --fix-missing \
 #
 # COPY extra-data/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz /opt
 RUN wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/dev/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz \
+    -q -o /dev/null \
     -O /opt/freesurfer-linux-ubuntu22_x86_64-7-dev.tar.gz
 
 # We extract the FreeSurfer nifhtly build and we remove the tar.gz file to save space
@@ -125,11 +126,11 @@ COPY extra-data/Task003_InnerTumor.zip /opt/weights
 
 # We extract the weights for TumorSynth
 RUN unzip /opt/weights/TumorSynth_v1.0.zip -d /opt/weights && \
-    mv /opt/weights/TumorSynth_v1.0 /opt/weights/Task002_Tumor && \
+    mv /opt/weights/Tum*o*rSynth_v1.0 /opt/weights/Task002_Tumor && \
     unzip /opt/weights/Task003_InnerTumor.zip -d /opt/weights 
 
 # We remove the folders and files that are not needed anymore to save space
-RUN rm -rf /opt/weights/TumorSynth_v1.0 && \
+RUN rm -rf /opt/weights/Tum*o*rSynth_v1.0 && \
     rm -rf /opt/weights/__MACOSX && \
     rm /opt/weights/TumorSynth_v1.0.zip && \
     rm /opt/weights/Task003_InnerTumor.zip  
