@@ -15,5 +15,5 @@ tag="tumorsynth-${version}"
 PATH=$PATH:/sbin
 PATH=$PATH:/usr/sbin
 
-docker build --build-arg version_arg=${version} --tag=${tag} --platform=linux/amd64 -f `pwd`/Dockerfile `pwd`
+docker buildx build --build-arg version_arg=${version} --tag=${tag} --platform=linux/amd64 -f `pwd`/Dockerfile `pwd`
 echo ${tag}
