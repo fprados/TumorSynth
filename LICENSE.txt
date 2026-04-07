@@ -1,0 +1,83 @@
+TumorSynth Software License Agreement ("Agreement")
+
+Version 1.0 (Adapted)
+
+This Agreement covers contributions to and downloads from the TumorSynth project ("TumorSynth") maintained by University College London, London, UK ("UCL").
+
+Part A of this Agreement applies to contributions of software and/or data to TumorSynth (including making revisions of or additions to code and/or data already in TumorSynth).
+Part B of this Agreement applies to downloads of software and/or data from TumorSynth.
+Part C of this Agreement applies to all transactions with TumorSynth.
+
+If you distribute Software (as defined below) downloaded from TumorSynth, all of the paragraphs of Part B of this Agreement must be included with and apply to such Software.
+
+Your contribution of software and/or data to TumorSynth (including prior to the date of the first publication of this Agreement, each a "Contribution") and/or downloading, copying, modifying, displaying, distributing or use of any software and/or data from TumorSynth (collectively, the "Software") constitutes acceptance of all of the terms and conditions of this Agreement.
+
+If you do not agree to such terms and conditions, you have no right to contribute your Contribution, or to download, copy, modify, display, distribute or use the Software.
+
+
+PART A. CONTRIBUTION AGREEMENT
+
+License to UCL with Right to Sublicense ("Contribution Agreement")
+
+As used in this Contribution Agreement, "you" means the individual contributing the Contribution to TumorSynth and the institution or entity which employs or is otherwise affiliated with such individual in connection with such Contribution.
+
+This Contribution Agreement applies to all Contributions made to TumorSynth, including without limitation Contributions made prior to the date of first publication of this Agreement.
+
+If at any time you make a Contribution to TumorSynth, you represent that:
+
+   (i) you are legally authorized and entitled to make such Contribution and to grant all licenses granted in this Contribution Agreement with respect to such Contribution;
+   (ii) if your Contribution includes any patient data, all such data is de-identified in accordance with applicable UK and EU data protection laws and regulations, including but not limited to the UK GDPR and Data Protection Act 2018, and your disclosure of such data for the purposes contemplated by this Agreement is properly authorized and compliant with all applicable laws; and
+   (iii) you have preserved in the Contribution all applicable attributions, copyright notices and licenses for any third party software or data included in the Contribution.
+
+Except for the licenses granted in this Agreement, you reserve all right, title and interest in your Contribution.
+
+You hereby grant to UCL, with the right to sublicense, a perpetual, worldwide, non-exclusive, no charge, royalty-free, irrevocable license to use, reproduce, make derivative works of, display and distribute the Contribution.
+
+If your Contribution is protected by patent, you hereby grant to UCL, with the right to sublicense, a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license under your patent rights covering the Contribution, to make, have made, use, sell and otherwise transfer your Contribution.
+
+You acknowledge and agree that UCL may incorporate your Contribution into TumorSynth and may make TumorSynth available to members of the public on an open source basis under terms substantially in accordance with the Software License set forth in Part B of this Agreement.
+
+UCL shall have no liability arising in connection with claims resulting from your breach of this Agreement.
+
+YOU WARRANT THAT TO THE BEST OF YOUR KNOWLEDGE YOUR CONTRIBUTION DOES NOT CONTAIN ANY CODE THAT REQUIRES OR PRESCRIBES AN "OPEN SOURCE LICENSE" FOR DERIVATIVE WORKS (e.g., GNU GPL or similar reciprocal licenses).
+
+
+PART B. DOWNLOADING AGREEMENT
+
+License from UCL with Right to Sublicense ("Software License")
+
+As used in this Software License, "you" means the individual downloading and/or using the Software and the institution or entity affiliated with such individual.
+
+University College London ("UCL") hereby grants you, with the right to sublicense, a royalty-free, non-exclusive license to use, reproduce, make derivative works of, display and distribute the Software, provided that:
+
+(a) you accept and adhere to all terms of this Software License;
+(b) any redistribution must include this license text with the statement:
+"All or portions of this licensed product (the "Software") have been obtained under license from University College London (UCL) and are subject to the following terms and conditions:"
+(c) you preserve all copyright notices and attributions;
+(d) modified versions must be clearly marked as such and not misrepresented as original;
+(e) you are encouraged, but not required, to share modifications openly.
+
+The license includes the right to incorporate the Software into proprietary programs, add your own copyright notices, and apply additional terms to modifications, provided compliance with this license.
+This license does not grant rights to third-party software. You are responsible for obtaining any necessary permissions.
+
+The Software is intended for research purposes only and has not been reviewed or approved by regulatory bodies.
+
+CLINICAL APPLICATIONS ARE NOT RECOMMENDED.
+
+Any commercialization is at your own risk. You must comply with all applicable laws and regulations, including export controls.
+
+THE SOFTWARE IS PROVIDED "AS IS".
+
+UCL AND CONTRIBUTORS DISCLAIM ALL WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL UCL OR CONTRIBUTORS BE LIABLE FOR ANY DAMAGES ARISING FROM USE OF THE SOFTWARE.
+
+You agree to indemnify and hold harmless UCL and contributors from any claims.
+
+The names, logos, or trademarks of UCL or contributors may not be used for endorsement without prior written permission. Any use not compliant with this license automatically terminates your rights. No rights are granted beyond those explicitly stated.
+
+PART C. MISCELLANEOUS
+
+This Agreement shall be governed by and construed in accordance with the laws of England and Wales.
+
+This Agreement supersedes any prior agreements related to TumorSynth.
