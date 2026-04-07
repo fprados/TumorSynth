@@ -1,6 +1,8 @@
 # TumorSynth
 mri_TumorSynth - To segment the healthy brain tissue and tumor in MR scans with tumor with support for multi-sequence MR inputs (T1, T1CE, T2, FLAIR or any other). [See TumorSynth website](https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth)
 
+mri_TumorSynth currently only works on x86 architectures.
+
 # Installation
 
 Read from here: [FreeSurfer Wiki - TumorSynth](https://surfer.nmr.mgh.harvard.edu/fswiki/TumorSynth#Installation)
